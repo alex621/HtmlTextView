@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.text.Editable;
 import android.text.Html;
 import android.text.Spanned;
+import android.text.style.ImageSpan;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -17,6 +18,9 @@ import android.widget.TextView;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class HtmlTextView extends FrameLayout {
     private static final String TAG = "HtmlTextView";
@@ -110,8 +114,25 @@ public class HtmlTextView extends FrameLayout {
         View renderImage(Context context, String src);
     }
 
-    public static class HtmlTextViewImageGetter {
+    public class HtmlTextViewImageGetter {
         public int viewWidth = -1;
+
+        private HashMap<Integer, View> viewMap = new HashMap<>();
+
+        public void onUpdatePosition(int index, String src, int left, int top, int width, int height) {
+            View v;
+            if (! viewMap.containsKey(index)){
+                v = renderer.renderImage(getContext(), src);
+                viewMap.put(index, v);
+                overlay.addView(v);
+            }else{
+                v = viewMap.get(index);
+            }
+
+            LayoutParams lp = new LayoutParams(width, height);
+            lp.setMargins(left, top, 0, 0);
+            v.setLayoutParams(lp);
+        }
     }
 
     private static class HtmlTextViewTagHandler implements Html.TagHandler{

@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public View renderImage(Context context, String src) {
                 View v = new View(context);
-                v.setBackgroundColor(0xFF0000FF);
+                v.setBackgroundColor(0x330000FF);
                 return v;
 //                if ("http://rethinkingtruth.com/wp-content/uploads/2013/11/sleep-like-a-baby.jpg?w=500".equalsIgnoreCase(src)){
 //

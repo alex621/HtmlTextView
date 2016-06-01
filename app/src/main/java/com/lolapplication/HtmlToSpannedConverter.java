@@ -39,6 +39,8 @@ import org.xml.sax.XMLReader;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class HtmlToSpannedConverter implements ContentHandler {
 
@@ -51,6 +53,9 @@ public class HtmlToSpannedConverter implements ContentHandler {
     private SpannableStringBuilder mSpannableStringBuilder;
     private HtmlTextView.HtmlTextViewImageGetter mImageGetter;
     private Html.TagHandler mTagHandler;
+
+    private boolean parsedOnce = false;
+    private int currentImageIndex = 0;
 
     public HtmlToSpannedConverter(
             String source, HtmlTextView.HtmlTextViewImageGetter imageGetter, Html.TagHandler tagHandler,
@@ -65,6 +70,8 @@ public class HtmlToSpannedConverter implements ContentHandler {
     public Spanned convert() {
         mSpannableStringBuilder.clearSpans();
         mSpannableStringBuilder.clear();
+
+        currentImageIndex = 0;
 
         mReader.setContentHandler(this);
         try {
@@ -97,6 +104,8 @@ public class HtmlToSpannedConverter implements ContentHandler {
                 mSpannableStringBuilder.setSpan(obj[i], start, end, Spannable.SPAN_PARAGRAPH);
             }
         }
+
+        parsedOnce = true;
 
         return mSpannableStringBuilder;
     }
@@ -254,8 +263,11 @@ public class HtmlToSpannedConverter implements ContentHandler {
         }
     }
 
-    private static void startImg(SpannableStringBuilder text,
-                                 Attributes attributes, HtmlTextView.HtmlTextViewImageGetter img) {
+    private ArrayList<ImageSpan> images = new ArrayList<>();
+
+    private void startImg(SpannableStringBuilder text,
+                                 Attributes attributes, final HtmlTextView.HtmlTextViewImageGetter img) {
+
         final String src = attributes.getValue("", "src");
         int width = 0, height = 0;
         try {
@@ -282,16 +294,23 @@ public class HtmlToSpannedConverter implements ContentHandler {
         int len = text.length();
         text.append("\uFFFC");
 
-        text.setSpan(new ImageSpan(d, src){
-                         @Override
-                         public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
-                             super.draw(canvas, text, start, end, x, top, y, bottom, paint);
+        final int finalWidth = width;
 
-//                             img.getDrawable(src, )
-                             Log.d("ImageSpan", "start: "+  start + "; end: " + end + "; x: " + x + "; top: " + top + "; y:" + y + "; bottom: " + bottom);
-                         }
-                     }, len, text.length(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        final int index = currentImageIndex;
+
+        ImageSpan span = new ImageSpan(d, src){
+            @Override
+            public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
+                super.draw(canvas, text, start, end, x, top, y, bottom, paint);
+
+                img.onUpdatePosition(index, src, (int) x, bottom - y + top, finalWidth, y - top);
+                Log.d("ImageSpan", "start: "+  start + "; end: " + end + "; x: " + x + "; top: " + top + "; y:" + y + "; bottom: " + bottom);
+            }
+        };
+
+        text.setSpan(span, len, text.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        currentImageIndex++;
     }
 
     private static void startFont(SpannableStringBuilder text,
