@@ -1,16 +1,12 @@
 package com.lolapplication;
 
 import android.content.Context;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
-import android.text.Editable;
 import android.text.Html;
 import android.text.Spanned;
-import android.text.style.ImageSpan;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -19,20 +15,20 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
-public class HtmlTextView extends FrameLayout {
+public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.ConverterProxy {
     private static final String TAG = "HtmlTextView";
     private String html;
     private TextView textView;
     private FrameLayout overlay;
 
-    private HtmlTextViewImageGetter imageGetter;
     private Html.TagHandler tagHandler;
     private HtmlToSpannedConverter converter;
 
     private HtmlTextViewRenderer renderer;
+
+    private int measuredWidth = -1;
 
     public HtmlTextView(Context context) {
         super(context);
@@ -60,14 +56,16 @@ public class HtmlTextView extends FrameLayout {
     private void init(){
         textView = createTextView();
         overlay = createOverlay();
-        imageGetter = new HtmlTextViewImageGetter();
-        tagHandler = new HtmlTextViewTagHandler();
     }
 
     public void setHtml(String html){
+        if (TextUtils.equals(html, this.html)){
+            return;
+        }
+
         this.html = html;
 
-        Spanned text = fromHtml(html, imageGetter, tagHandler);
+        Spanned text = fromHtml(html, tagHandler);
         textView.setText(text);
     }
 
@@ -79,7 +77,15 @@ public class HtmlTextView extends FrameLayout {
         this.renderer = renderer;
     }
 
-    private Spanned fromHtml(String source, HtmlTextViewImageGetter imageGetter, Html.TagHandler tagHandler){
+    public Html.TagHandler getTagHandler() {
+        return tagHandler;
+    }
+
+    public void setTagHandler(Html.TagHandler tagHandler) {
+        this.tagHandler = tagHandler;
+    }
+
+    private Spanned fromHtml(String source, Html.TagHandler tagHandler){
         XMLReader parser = null;
         try {
             parser = XMLReaderFactory.createXMLReader("org.ccil.cowan.tagsoup.Parser");
@@ -88,11 +94,9 @@ public class HtmlTextView extends FrameLayout {
             return null;
         }
 
-        converter = new HtmlToSpannedConverter(source, imageGetter, tagHandler, parser);
+        converter = new HtmlToSpannedConverter(source, this, tagHandler, parser);
         return converter.convert();
     }
-
-    private int measuredWidth = -1;
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -104,59 +108,35 @@ public class HtmlTextView extends FrameLayout {
         if (measuredWidth != newMeasuredWidth) {
             measuredWidth = newMeasuredWidth;
 
-            imageGetter.viewWidth = measuredWidth;
-
+            //to trigger re-rendering
             textView.setText(converter.convert());
         }
+    }
+
+    private SparseArray<View> viewMap = new SparseArray<>();
+
+    @Override
+    public int getViewWidth() {
+        return measuredWidth;
+    }
+
+    @Override
+    public void onCreateImageSpace(int index, String src, int left, int top, int width, int height) {
+        View v = viewMap.get(index);
+        if (v == null){
+            v = renderer.renderImage(getContext(), src);
+            viewMap.put(index, v);
+            overlay.addView(v);
+        }
+
+        LayoutParams lp = new LayoutParams(width, height);
+        lp.setMargins(left, top, 0, 0);
+        v.setLayoutParams(lp);
     }
 
     public interface HtmlTextViewRenderer{
         View renderImage(Context context, String src);
     }
 
-    public class HtmlTextViewImageGetter {
-        public int viewWidth = -1;
-
-        private HashMap<Integer, View> viewMap = new HashMap<>();
-
-        public void onUpdatePosition(int index, String src, int left, int top, int width, int height) {
-            View v;
-            if (! viewMap.containsKey(index)){
-                v = renderer.renderImage(getContext(), src);
-                viewMap.put(index, v);
-                overlay.addView(v);
-            }else{
-                v = viewMap.get(index);
-            }
-
-            LayoutParams lp = new LayoutParams(width, height);
-            lp.setMargins(left, top, 0, 0);
-            v.setLayoutParams(lp);
-        }
-    }
-
-    private static class HtmlTextViewTagHandler implements Html.TagHandler{
-        private static final String TAG = "TagHandler";
-
-        private int depth = 0;
-        @Override
-        public void handleTag(boolean opening, String tag, Editable output, XMLReader xmlReader) {
-            Log.d(TAG, "handleTag: " + tag);
-//            String ret = "";
-//            for (int i = 0; i < depth; i++){
-//                ret += "  ";
-//            }
-//
-//            if (opening){
-//                ret += "<" + tag + ">";
-//                depth++;
-//            }else{
-//                ret += "</" + tag + ">";
-//                depth--;
-//            }
-//
-//            Log.d(TAG, ret);
-        }
-    }
 
 }

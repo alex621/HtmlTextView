@@ -6,10 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.support.v4.content.ContextCompat;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -33,14 +31,12 @@ import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.Locator;
-import org.xml.sax.Parser;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class HtmlToSpannedConverter implements ContentHandler {
 
@@ -51,18 +47,17 @@ public class HtmlToSpannedConverter implements ContentHandler {
     private String mSource;
     private XMLReader mReader;
     private SpannableStringBuilder mSpannableStringBuilder;
-    private HtmlTextView.HtmlTextViewImageGetter mImageGetter;
+    private ConverterProxy proxy;
     private Html.TagHandler mTagHandler;
 
-    private boolean parsedOnce = false;
     private int currentImageIndex = 0;
 
     public HtmlToSpannedConverter(
-            String source, HtmlTextView.HtmlTextViewImageGetter imageGetter, Html.TagHandler tagHandler,
+            String source, ConverterProxy imageGetter, Html.TagHandler tagHandler,
             XMLReader parser) {
         mSource = source;
         mSpannableStringBuilder = new SpannableStringBuilder();
-        mImageGetter = imageGetter;
+        proxy = imageGetter;
         mTagHandler = tagHandler;
         mReader = parser;
     }
@@ -104,8 +99,6 @@ public class HtmlToSpannedConverter implements ContentHandler {
                 mSpannableStringBuilder.setSpan(obj[i], start, end, Spannable.SPAN_PARAGRAPH);
             }
         }
-
-        parsedOnce = true;
 
         return mSpannableStringBuilder;
     }
@@ -155,7 +148,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
             handleP(mSpannableStringBuilder);
             start(mSpannableStringBuilder, new Header(tag.charAt(1) - '1'));
         } else if (tag.equalsIgnoreCase("img")) {
-            startImg(mSpannableStringBuilder, attributes, mImageGetter);
+            startImg(mSpannableStringBuilder, attributes);
         } else if (mTagHandler != null) {
             mTagHandler.handleTag(true, tag, mSpannableStringBuilder, mReader);
         }
@@ -263,11 +256,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
         }
     }
 
-    private ArrayList<ImageSpan> images = new ArrayList<>();
-
-    private void startImg(SpannableStringBuilder text,
-                                 Attributes attributes, final HtmlTextView.HtmlTextViewImageGetter img) {
-
+    private void startImg(SpannableStringBuilder text, Attributes attributes) {
         final String src = attributes.getValue("", "src");
         int width = 0, height = 0;
         try {
@@ -277,15 +266,17 @@ public class HtmlToSpannedConverter implements ContentHandler {
 
         }
 
-        Log.d("Html", width + "x" + height + "; " + img.viewWidth);
+        int viewWidth = proxy.getViewWidth();
 
-        if (img.viewWidth > 0){
-            if (width > img.viewWidth){
-                height = img.viewWidth * height / width;
-                width = img.viewWidth;
+        Log.d("Html", width + "x" + height + "; " + viewWidth);
+
+        if (viewWidth > 0){
+            if (width > viewWidth){
+                height = viewWidth * height / width;
+                width = viewWidth;
             }
         }
-        Log.d("Html", "Computed: " + width + "x" + height + "; " + img.viewWidth);
+        Log.d("Html", "Computed: " + width + "x" + height + "; " + viewWidth);
 
 //        Drawable d = new ColorDrawable(Color.RED);
         Drawable d = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0xFFFF0000, 0xFF000000});
@@ -303,7 +294,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
             public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
                 super.draw(canvas, text, start, end, x, top, y, bottom, paint);
 
-                img.onUpdatePosition(index, src, (int) x, bottom - y + top, finalWidth, y - top);
+                proxy.onCreateImageSpace(index, src, (int) x, bottom - y + top, finalWidth, y - top);
                 Log.d("ImageSpan", "start: "+  start + "; end: " + end + "; x: " + x + "; top: " + top + "; y:" + y + "; bottom: " + bottom);
             }
         };
@@ -516,5 +507,10 @@ public class HtmlToSpannedConverter implements ContentHandler {
         public Header(int level) {
             mLevel = level;
         }
+    }
+
+    interface ConverterProxy{
+        int getViewWidth();
+        void onCreateImageSpace(int index, String src, int left, int top, int width, int height);
     }
 }
