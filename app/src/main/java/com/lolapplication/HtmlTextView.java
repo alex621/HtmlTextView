@@ -1,7 +1,6 @@
 package com.lolapplication;
 
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.text.Html;
@@ -29,9 +28,7 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
     private Html.TagHandler tagHandler;
     private HtmlToSpannedConverter converter;
 
-    private HtmlTextViewAdapter renderer;
-
-    private SparseArray<ViewHolder> viewMap = new SparseArray<>();
+    private HtmlTextViewAdapter adapter;
 
     private int measuredWidth = -1;
 
@@ -74,12 +71,12 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         textView.setText(text);
     }
 
-    public HtmlTextViewAdapter getRenderer() {
-        return renderer;
+    public HtmlTextViewAdapter getAdapter() {
+        return adapter;
     }
 
-    public void setRenderer(HtmlTextViewAdapter renderer) {
-        this.renderer = renderer;
+    public void setAdapter(HtmlTextViewAdapter adapter) {
+        this.adapter = adapter;
     }
 
     public Html.TagHandler getTagHandler() {
@@ -119,29 +116,31 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-
-        Log.d(TAG, "onDraw");
-    }
-
-    @Override
     public int getViewWidth() {
         return measuredWidth;
     }
 
+    public static final int VIEWHOLDER_TYPE_IMG = 1;
+
+    private SparseArray<ImgContainer> imgContainerMap = new SparseArray<>();
     @Override
     public void onCreateImageSpace(int index, String src, int left, int top, int width, int height) {
-        ViewHolder v = viewMap.get(index);
-        if (v == null){
-            v = renderer.renderImg(getContext(), src, v);
-            viewMap.put(index, v);
-            overlay.addView(v.itemView);
+        ImgContainer container = imgContainerMap.get(index);
+        if (container == null){
+            container = new ImgContainer(getContext(), adapter, index, src);
+            container.containerView.setTag(R.id.htmltextview_viewholder_index, index);
+            container.containerView.setTag(R.id.htmltextview_viewholder_type, VIEWHOLDER_TYPE_IMG);
+            overlay.addView(container.containerView);
+
+            imgContainerMap.put(index, container);
         }
+
 
         LayoutParams lp = new LayoutParams(width, height);
         lp.setMargins(left, top, 0, 0);
-        v.itemView.setLayoutParams(lp);
+        container.containerView.setLayoutParams(lp);
+
+        recycleCheck();
     }
 
     private int[] coordinate = new int[2];
@@ -170,15 +169,92 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
 
             viewRect.set(coordinate[0], coordinate[1], coordinate[0] + v.getMeasuredWidth(), coordinate[1] + v.getMeasuredHeight());
 
-            Log.d(TAG, "Visible ("+i+"): " + viewRect.intersect(screenRect));
-//            Log.d(TAG, "Item " + i + ": " + coordinate[0] + ", " + coordinate[1]);
-//            if (i == 0) return;
+            boolean isVisible = viewRect.intersect(screenRect);
+            Integer index = (Integer) v.getTag(R.id.htmltextview_viewholder_index);
+            Integer type = (Integer) v.getTag(R.id.htmltextview_viewholder_type);
+            if (index == null || type == null){
+                //WTF?
+                continue;
+            }
+
+            Container container = null;
+            switch (type){
+                case VIEWHOLDER_TYPE_IMG:
+                default:
+                    container = imgContainerMap.get(index);
+                    break;
+            }
+            if (isVisible){
+                if (container.visible){
+                    //fine
+                }else{
+                    //was invisible, make it visible
+                    container.attachChild();
+                    container.visible = true;
+                }
+            }else{
+                if (container.visible){
+                    //was visible, recycle it
+                    container.detachChild();
+                    container.visible = false;
+                }else{
+                    //fine
+                }
+            }
+//            Log.d(TAG, "Visible ("+i+"): " + viewRect.intersect(screenRect));
+        }
+    }
+
+
+    public static abstract class Container<VH extends ViewHolder>{
+        public VH viewHolder;
+        public FrameLayout containerView;
+        public int index;
+        public boolean visible;
+
+        public Container(Context context, int index) {
+            containerView = new FrameLayout(context);
+            this.index = index;
+        }
+
+        public FrameLayout getContainerView(){
+            return containerView;
+        }
+
+        public abstract void attachChild();
+        public abstract void detachChild();
+    }
+    public static class ImgContainer extends Container<ImgViewHolder>{
+        private String src;
+        private HtmlTextViewAdapter adapter;
+
+        public ImgContainer(Context context, HtmlTextViewAdapter adapter, int index, String src) {
+            super(context, index);
+
+            this.adapter = adapter;
+            this.src = src;
+        }
+
+        @Override
+        public void attachChild() {
+            viewHolder = adapter.renderImg(containerView.getContext(), src, viewHolder);
+            containerView.addView(viewHolder.itemView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+        }
+
+        @Override
+        public void detachChild() {
+            containerView.removeAllViews();
+            adapter.recycleImg(viewHolder, src);
         }
     }
 
     public static abstract class HtmlTextViewAdapter {
-        public ViewHolder renderImg(Context context, String src, ViewHolder oldViewHolder) {
+        public ImgViewHolder renderImg(Context context, String src, ImgViewHolder oldViewHolder) {
             return null;
+        }
+
+        public void recycleImg(ImgViewHolder viewHolder, String src){
+
         }
     }
 
@@ -190,6 +266,13 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
                 throw new IllegalArgumentException("itemView may not be null");
             }
             this.itemView = itemView;
+        }
+    }
+
+    public static class ImgViewHolder extends ViewHolder{
+
+        public ImgViewHolder(View itemView) {
+            super(itemView);
         }
     }
 
