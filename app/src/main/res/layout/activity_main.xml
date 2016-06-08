@@ -1,21 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <!--<HorizontalScrollView-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content">-->
-    <ScrollView
+
+    <com.lolapplication.ObservableScrollView
+        android:id="@+id/scroller"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-    <com.lolapplication.HtmlTextView
-        android:id="@+id/lol"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#CCC"/>
+        <com.lolapplication.HtmlTextView
+            android:id="@+id/lol"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#CCC"/>
 
-    </ScrollView>
-    <!--</HorizontalScrollView>-->
+    </com.lolapplication.ObservableScrollView>
 
-</RelativeLayout>
+</LinearLayout>

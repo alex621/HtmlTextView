@@ -1,21 +1,24 @@
 package com.lolapplication;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
-
-import java.util.HashMap;
 
 public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.ConverterProxy {
     private static final String TAG = "HtmlTextView";
@@ -26,7 +29,9 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
     private Html.TagHandler tagHandler;
     private HtmlToSpannedConverter converter;
 
-    private HtmlTextViewRenderer renderer;
+    private HtmlTextViewAdapter renderer;
+
+    private SparseArray<ViewHolder> viewMap = new SparseArray<>();
 
     private int measuredWidth = -1;
 
@@ -69,11 +74,11 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         textView.setText(text);
     }
 
-    public HtmlTextViewRenderer getRenderer() {
+    public HtmlTextViewAdapter getRenderer() {
         return renderer;
     }
 
-    public void setRenderer(HtmlTextViewRenderer renderer) {
+    public void setRenderer(HtmlTextViewAdapter renderer) {
         this.renderer = renderer;
     }
 
@@ -113,7 +118,12 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         }
     }
 
-    private SparseArray<View> viewMap = new SparseArray<>();
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        Log.d(TAG, "onDraw");
+    }
 
     @Override
     public int getViewWidth() {
@@ -122,21 +132,65 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
 
     @Override
     public void onCreateImageSpace(int index, String src, int left, int top, int width, int height) {
-        View v = viewMap.get(index);
+        ViewHolder v = viewMap.get(index);
         if (v == null){
-            v = renderer.renderImage(getContext(), src);
+            v = renderer.renderImg(getContext(), src, v);
             viewMap.put(index, v);
-            overlay.addView(v);
+            overlay.addView(v.itemView);
         }
 
         LayoutParams lp = new LayoutParams(width, height);
         lp.setMargins(left, top, 0, 0);
-        v.setLayoutParams(lp);
+        v.itemView.setLayoutParams(lp);
     }
 
-    public interface HtmlTextViewRenderer{
-        View renderImage(Context context, String src);
+    private int[] coordinate = new int[2];
+    private static Rect screenRect = null;
+    private Rect viewRect = new Rect();
+    private void getScreenRect(){
+        if (screenRect != null){
+            return;
+        }
+
+        WindowManager wm = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        Display display = wm.getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        int width = size.x;
+        int height = size.y;
+        screenRect = new Rect(0, 0, width, height);
     }
 
+    public void recycleCheck(){
+        getScreenRect();
+
+        for (int i = 0, l = overlay.getChildCount(); i < l; i++) {
+            View v = overlay.getChildAt(i);
+            v.getLocationOnScreen(coordinate);
+
+            viewRect.set(coordinate[0], coordinate[1], coordinate[0] + v.getMeasuredWidth(), coordinate[1] + v.getMeasuredHeight());
+
+            Log.d(TAG, "Visible ("+i+"): " + viewRect.intersect(screenRect));
+//            Log.d(TAG, "Item " + i + ": " + coordinate[0] + ", " + coordinate[1]);
+//            if (i == 0) return;
+        }
+    }
+
+    public static abstract class HtmlTextViewAdapter {
+        public ViewHolder renderImg(Context context, String src, ViewHolder oldViewHolder) {
+            return null;
+        }
+    }
+
+    public static abstract class ViewHolder{
+        public final View itemView;
+
+        public ViewHolder(View itemView) {
+            if (itemView == null) {
+                throw new IllegalArgumentException("itemView may not be null");
+            }
+            this.itemView = itemView;
+        }
+    }
 
 }
