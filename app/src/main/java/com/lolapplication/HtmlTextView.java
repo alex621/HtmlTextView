@@ -128,6 +128,8 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         ImgContainer container = imgContainerMap.get(index);
         if (container == null){
             container = new ImgContainer(getContext(), adapter, index, src);
+            container.width = width;
+            container.height = height;
             container.containerView.setTag(R.id.htmltextview_viewholder_index, index);
             container.containerView.setTag(R.id.htmltextview_viewholder_type, VIEWHOLDER_TYPE_IMG);
             overlay.addView(container.containerView);
@@ -211,6 +213,7 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         public FrameLayout containerView;
         public int index;
         public boolean visible;
+        public int width, height;
 
         public Container(Context context, int index) {
             containerView = new FrameLayout(context);
@@ -237,7 +240,7 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
 
         @Override
         public void attachChild() {
-            viewHolder = adapter.renderImg(containerView.getContext(), src, viewHolder);
+            viewHolder = adapter.renderImg(containerView.getContext(), src, width, height, viewHolder);
             containerView.addView(viewHolder.itemView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
         }
 
@@ -249,7 +252,7 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
     }
 
     public static abstract class HtmlTextViewAdapter {
-        public ImgViewHolder renderImg(Context context, String src, ImgViewHolder oldViewHolder) {
+        public ImgViewHolder renderImg(Context context, String src, int width, int height, ImgViewHolder oldViewHolder) {
             return null;
         }
 
