@@ -19,6 +19,8 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
+import java.util.HashMap;
+
 public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.ConverterProxy {
     private static final String TAG = "HtmlTextView";
     private String html;
@@ -28,7 +30,9 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
     private Html.TagHandler tagHandler;
     private HtmlToSpannedConverter converter;
 
-    private HtmlTextViewAdapter adapter;
+    private DataSupplier dataSupplier = new DefaultDataSupplier();
+
+    private HtmlTextViewAdapter adapter = new HtmlTextViewDefaultAdapter();
 
     private int measuredWidth = -1;
 
@@ -71,6 +75,18 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         textView.setText(text);
     }
 
+    public DataSupplier getDataSupplier() {
+        return dataSupplier;
+    }
+
+    public void setDataSupplier(DataSupplier dataSupplier) {
+        this.dataSupplier = dataSupplier;
+
+        if (dataSupplier == null){
+            this.dataSupplier = new DefaultDataSupplier();
+        }
+    }
+
     public HtmlTextViewAdapter getAdapter() {
         return adapter;
     }
@@ -96,15 +112,13 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
             return null;
         }
 
-        converter = new HtmlToSpannedConverter(source, this, tagHandler, parser);
+        converter = new HtmlToSpannedConverter(source, this, dataSupplier, tagHandler, parser);
         return converter.convert();
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-
-        Log.d(TAG, "onMeasure: " + measuredWidth);
 
         int newMeasuredWidth = getMeasuredWidth();
         if (measuredWidth != newMeasuredWidth) {
@@ -203,7 +217,6 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
                     //fine
                 }
             }
-//            Log.d(TAG, "Visible ("+i+"): " + viewRect.intersect(screenRect));
         }
     }
 
@@ -276,6 +289,68 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
 
         public ImgViewHolder(View itemView) {
             super(itemView);
+        }
+    }
+
+    public static class ImgData{
+        private int width = 0, height = 0;
+
+        public ImgData(){}
+
+        public ImgData(int width, int height) {
+            this.width = width;
+            this.height = height;
+        }
+
+        public void setWidth(int width) {
+            this.width = width;
+        }
+
+        public void setHeight(int height) {
+            this.height = height;
+        }
+
+        public int getWidth(){
+            return width;
+        }
+        public int getHeight(){
+            return height;
+        }
+    }
+    interface DataSupplier{
+        ImgData getImgData(String src);
+    }
+
+    public static class MapDataSupplier implements DataSupplier{
+        private HashMap<String, ImgData> map;
+
+        public MapDataSupplier(){
+            this(null);
+        }
+
+        public MapDataSupplier(HashMap<String, ImgData> map) {
+            this.map = map;
+
+            if (this.map == null){
+                this.map = new HashMap<>();
+            }
+        }
+
+        public MapDataSupplier put(String src, ImgData data){
+            map.put(src, data);
+            return this;
+        }
+
+        @Override
+        public ImgData getImgData(String src) {
+            return map.get(src);
+        }
+    }
+
+    private class DefaultDataSupplier implements DataSupplier{
+        @Override
+        public ImgData getImgData(String src) {
+            return null;
         }
     }
 

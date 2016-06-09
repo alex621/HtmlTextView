@@ -49,17 +49,19 @@ public class HtmlToSpannedConverter implements ContentHandler {
     private SpannableStringBuilder mSpannableStringBuilder;
     private ConverterProxy proxy;
     private Html.TagHandler mTagHandler;
+    private HtmlTextView.DataSupplier dataSupplier;
 
     private int currentImageIndex = 0;
 
     public HtmlToSpannedConverter(
-            String source, ConverterProxy imageGetter, Html.TagHandler tagHandler,
+            String source, ConverterProxy imageGetter, HtmlTextView.DataSupplier dataSupplier, Html.TagHandler tagHandler,
             XMLReader parser) {
         mSource = source;
         mSpannableStringBuilder = new SpannableStringBuilder();
         proxy = imageGetter;
         mTagHandler = tagHandler;
         mReader = parser;
+        this.dataSupplier = dataSupplier;
     }
 
     public Spanned convert() {
@@ -259,11 +261,18 @@ public class HtmlToSpannedConverter implements ContentHandler {
     private void startImg(SpannableStringBuilder text, Attributes attributes) {
         final String src = attributes.getValue("", "src");
         int width = 0, height = 0;
-        try {
-            width = Integer.parseInt(attributes.getValue("", "width"));
-            height = Integer.parseInt(attributes.getValue("", "height"));
-        }catch (Exception e){
 
+        HtmlTextView.ImgData data = dataSupplier.getImgData(src);
+        if (data != null){
+            width = data.getWidth();
+            height = data.getHeight();
+        } else {
+            try {
+                width = Integer.parseInt(attributes.getValue("", "width"));
+                height = Integer.parseInt(attributes.getValue("", "height"));
+            } catch (Exception e) {
+
+            }
         }
 
         int viewWidth = proxy.getViewWidth();
