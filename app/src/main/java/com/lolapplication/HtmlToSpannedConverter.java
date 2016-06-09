@@ -6,8 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -25,7 +25,6 @@ import android.text.style.TextAppearanceSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
-import android.util.Log;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -36,7 +35,6 @@ import org.xml.sax.XMLReader;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
 
 public class HtmlToSpannedConverter implements ContentHandler {
 
@@ -44,35 +42,35 @@ public class HtmlToSpannedConverter implements ContentHandler {
             1.5f, 1.4f, 1.3f, 1.2f, 1.1f, 1f,
     };
 
-    private String mSource;
-    private XMLReader mReader;
-    private SpannableStringBuilder mSpannableStringBuilder;
+    private String source;
+    private XMLReader reader;
+    private SpannableStringBuilder spannableStringBuilder;
     private ConverterProxy proxy;
-    private Html.TagHandler mTagHandler;
+    private Html.TagHandler tagHandler;
     private HtmlTextView.DataSupplier dataSupplier;
 
     private int currentImageIndex = 0;
 
     public HtmlToSpannedConverter(
-            String source, ConverterProxy imageGetter, HtmlTextView.DataSupplier dataSupplier, Html.TagHandler tagHandler,
+            String source, ConverterProxy proxy, HtmlTextView.DataSupplier dataSupplier, Html.TagHandler tagHandler,
             XMLReader parser) {
-        mSource = source;
-        mSpannableStringBuilder = new SpannableStringBuilder();
-        proxy = imageGetter;
-        mTagHandler = tagHandler;
-        mReader = parser;
+        this.spannableStringBuilder = new SpannableStringBuilder();
+        this.source = source;
+        this.proxy = proxy;
         this.dataSupplier = dataSupplier;
+        this.tagHandler = tagHandler;
+        this.reader = parser;
     }
 
     public Spanned convert() {
-        mSpannableStringBuilder.clearSpans();
-        mSpannableStringBuilder.clear();
+        spannableStringBuilder.clearSpans();
+        spannableStringBuilder.clear();
 
         currentImageIndex = 0;
 
-        mReader.setContentHandler(this);
+        reader.setContentHandler(this);
         try {
-            mReader.parse(new InputSource(new StringReader(mSource)));
+            reader.parse(new InputSource(new StringReader(source)));
         } catch (IOException e) {
             // We are reading from a string. There should not be IO problems.
             throw new RuntimeException(e);
@@ -82,27 +80,27 @@ public class HtmlToSpannedConverter implements ContentHandler {
         }
 
         // Fix flags and range for paragraph-type markup.
-        Object[] obj = mSpannableStringBuilder.getSpans(0, mSpannableStringBuilder.length(), ParagraphStyle.class);
+        Object[] obj = spannableStringBuilder.getSpans(0, spannableStringBuilder.length(), ParagraphStyle.class);
         for (int i = 0; i < obj.length; i++) {
-            int start = mSpannableStringBuilder.getSpanStart(obj[i]);
-            int end = mSpannableStringBuilder.getSpanEnd(obj[i]);
+            int start = spannableStringBuilder.getSpanStart(obj[i]);
+            int end = spannableStringBuilder.getSpanEnd(obj[i]);
 
             // If the last line of the range is blank, back off by one.
             if (end - 2 >= 0) {
-                if (mSpannableStringBuilder.charAt(end - 1) == '\n' &&
-                        mSpannableStringBuilder.charAt(end - 2) == '\n') {
+                if (spannableStringBuilder.charAt(end - 1) == '\n' &&
+                        spannableStringBuilder.charAt(end - 2) == '\n') {
                     end--;
                 }
             }
 
             if (end == start) {
-                mSpannableStringBuilder.removeSpan(obj[i]);
+                spannableStringBuilder.removeSpan(obj[i]);
             } else {
-                mSpannableStringBuilder.setSpan(obj[i], start, end, Spannable.SPAN_PARAGRAPH);
+                spannableStringBuilder.setSpan(obj[i], start, end, Spannable.SPAN_PARAGRAPH);
             }
         }
 
-        return mSpannableStringBuilder;
+        return spannableStringBuilder;
     }
 
     private void handleStartTag(String tag, Attributes attributes) {
@@ -110,98 +108,98 @@ public class HtmlToSpannedConverter implements ContentHandler {
             // We don't need to handle this. TagSoup will ensure that there's a </br> for each <br>
             // so we can safely emite the linebreaks when we handle the close tag.
         } else if (tag.equalsIgnoreCase("p")) {
-            handleP(mSpannableStringBuilder);
+            handleP(spannableStringBuilder);
         } else if (tag.equalsIgnoreCase("div")) {
-            handleP(mSpannableStringBuilder);
+            handleP(spannableStringBuilder);
         } else if (tag.equalsIgnoreCase("strong")) {
-            start(mSpannableStringBuilder, new Bold());
+            start(spannableStringBuilder, new Bold());
         } else if (tag.equalsIgnoreCase("b")) {
-            start(mSpannableStringBuilder, new Bold());
+            start(spannableStringBuilder, new Bold());
         } else if (tag.equalsIgnoreCase("em")) {
-            start(mSpannableStringBuilder, new Italic());
+            start(spannableStringBuilder, new Italic());
         } else if (tag.equalsIgnoreCase("cite")) {
-            start(mSpannableStringBuilder, new Italic());
+            start(spannableStringBuilder, new Italic());
         } else if (tag.equalsIgnoreCase("dfn")) {
-            start(mSpannableStringBuilder, new Italic());
+            start(spannableStringBuilder, new Italic());
         } else if (tag.equalsIgnoreCase("i")) {
-            start(mSpannableStringBuilder, new Italic());
+            start(spannableStringBuilder, new Italic());
         } else if (tag.equalsIgnoreCase("big")) {
-            start(mSpannableStringBuilder, new Big());
+            start(spannableStringBuilder, new Big());
         } else if (tag.equalsIgnoreCase("small")) {
-            start(mSpannableStringBuilder, new Small());
+            start(spannableStringBuilder, new Small());
         } else if (tag.equalsIgnoreCase("font")) {
-            startFont(mSpannableStringBuilder, attributes);
+            startFont(spannableStringBuilder, attributes);
         } else if (tag.equalsIgnoreCase("blockquote")) {
-            handleP(mSpannableStringBuilder);
-            start(mSpannableStringBuilder, new Blockquote());
+            handleP(spannableStringBuilder);
+            start(spannableStringBuilder, new Blockquote());
         } else if (tag.equalsIgnoreCase("tt")) {
-            start(mSpannableStringBuilder, new Monospace());
+            start(spannableStringBuilder, new Monospace());
         } else if (tag.equalsIgnoreCase("a")) {
-            startA(mSpannableStringBuilder, attributes);
+            startA(spannableStringBuilder, attributes);
         } else if (tag.equalsIgnoreCase("u")) {
-            start(mSpannableStringBuilder, new Underline());
+            start(spannableStringBuilder, new Underline());
         } else if (tag.equalsIgnoreCase("sup")) {
-            start(mSpannableStringBuilder, new Super());
+            start(spannableStringBuilder, new Super());
         } else if (tag.equalsIgnoreCase("sub")) {
-            start(mSpannableStringBuilder, new Sub());
+            start(spannableStringBuilder, new Sub());
         } else if (tag.length() == 2 &&
                 Character.toLowerCase(tag.charAt(0)) == 'h' &&
                 tag.charAt(1) >= '1' && tag.charAt(1) <= '6') {
-            handleP(mSpannableStringBuilder);
-            start(mSpannableStringBuilder, new Header(tag.charAt(1) - '1'));
+            handleP(spannableStringBuilder);
+            start(spannableStringBuilder, new Header(tag.charAt(1) - '1'));
         } else if (tag.equalsIgnoreCase("img")) {
-            startImg(mSpannableStringBuilder, attributes);
-        } else if (mTagHandler != null) {
-            mTagHandler.handleTag(true, tag, mSpannableStringBuilder, mReader);
+            startImg(spannableStringBuilder, attributes);
+        } else if (tagHandler != null) {
+            tagHandler.handleTag(true, tag, spannableStringBuilder, reader);
         }
     }
 
     private void handleEndTag(String tag) {
         if (tag.equalsIgnoreCase("br")) {
-            handleBr(mSpannableStringBuilder);
+            handleBr(spannableStringBuilder);
         } else if (tag.equalsIgnoreCase("p")) {
-            handleP(mSpannableStringBuilder);
+            handleP(spannableStringBuilder);
         } else if (tag.equalsIgnoreCase("div")) {
-            handleP(mSpannableStringBuilder);
+            handleP(spannableStringBuilder);
         } else if (tag.equalsIgnoreCase("strong")) {
-            end(mSpannableStringBuilder, Bold.class, new StyleSpan(Typeface.BOLD));
+            end(spannableStringBuilder, Bold.class, new StyleSpan(Typeface.BOLD));
         } else if (tag.equalsIgnoreCase("b")) {
-            end(mSpannableStringBuilder, Bold.class, new StyleSpan(Typeface.BOLD));
+            end(spannableStringBuilder, Bold.class, new StyleSpan(Typeface.BOLD));
         } else if (tag.equalsIgnoreCase("em")) {
-            end(mSpannableStringBuilder, Italic.class, new StyleSpan(Typeface.ITALIC));
+            end(spannableStringBuilder, Italic.class, new StyleSpan(Typeface.ITALIC));
         } else if (tag.equalsIgnoreCase("cite")) {
-            end(mSpannableStringBuilder, Italic.class, new StyleSpan(Typeface.ITALIC));
+            end(spannableStringBuilder, Italic.class, new StyleSpan(Typeface.ITALIC));
         } else if (tag.equalsIgnoreCase("dfn")) {
-            end(mSpannableStringBuilder, Italic.class, new StyleSpan(Typeface.ITALIC));
+            end(spannableStringBuilder, Italic.class, new StyleSpan(Typeface.ITALIC));
         } else if (tag.equalsIgnoreCase("i")) {
-            end(mSpannableStringBuilder, Italic.class, new StyleSpan(Typeface.ITALIC));
+            end(spannableStringBuilder, Italic.class, new StyleSpan(Typeface.ITALIC));
         } else if (tag.equalsIgnoreCase("big")) {
-            end(mSpannableStringBuilder, Big.class, new RelativeSizeSpan(1.25f));
+            end(spannableStringBuilder, Big.class, new RelativeSizeSpan(1.25f));
         } else if (tag.equalsIgnoreCase("small")) {
-            end(mSpannableStringBuilder, Small.class, new RelativeSizeSpan(0.8f));
+            end(spannableStringBuilder, Small.class, new RelativeSizeSpan(0.8f));
         } else if (tag.equalsIgnoreCase("font")) {
-            endFont(mSpannableStringBuilder);
+            endFont(spannableStringBuilder);
         } else if (tag.equalsIgnoreCase("blockquote")) {
-            handleP(mSpannableStringBuilder);
-            end(mSpannableStringBuilder, Blockquote.class, new QuoteSpan());
+            handleP(spannableStringBuilder);
+            end(spannableStringBuilder, Blockquote.class, new QuoteSpan());
         } else if (tag.equalsIgnoreCase("tt")) {
-            end(mSpannableStringBuilder, Monospace.class,
+            end(spannableStringBuilder, Monospace.class,
                     new TypefaceSpan("monospace"));
         } else if (tag.equalsIgnoreCase("a")) {
-            endA(mSpannableStringBuilder);
+            endA(spannableStringBuilder);
         } else if (tag.equalsIgnoreCase("u")) {
-            end(mSpannableStringBuilder, Underline.class, new UnderlineSpan());
+            end(spannableStringBuilder, Underline.class, new UnderlineSpan());
         } else if (tag.equalsIgnoreCase("sup")) {
-            end(mSpannableStringBuilder, Super.class, new SuperscriptSpan());
+            end(spannableStringBuilder, Super.class, new SuperscriptSpan());
         } else if (tag.equalsIgnoreCase("sub")) {
-            end(mSpannableStringBuilder, Sub.class, new SubscriptSpan());
+            end(spannableStringBuilder, Sub.class, new SubscriptSpan());
         } else if (tag.length() == 2 &&
                 Character.toLowerCase(tag.charAt(0)) == 'h' &&
                 tag.charAt(1) >= '1' && tag.charAt(1) <= '6') {
-            handleP(mSpannableStringBuilder);
-            endHeader(mSpannableStringBuilder);
-        } else if (mTagHandler != null) {
-            mTagHandler.handleTag(false, tag, mSpannableStringBuilder, mReader);
+            handleP(spannableStringBuilder);
+            endHeader(spannableStringBuilder);
+        } else if (tagHandler != null) {
+            tagHandler.handleTag(false, tag, spannableStringBuilder, reader);
         }
     }
 
@@ -262,6 +260,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
         final String src = attributes.getValue("", "src");
         int width = 0, height = 0;
 
+        //prefer data from dataSupplier over inline attribute
         HtmlTextView.ImgData data = dataSupplier.getImgData(src);
         if (data != null){
             width = data.getWidth();
@@ -277,18 +276,17 @@ public class HtmlToSpannedConverter implements ContentHandler {
 
         int viewWidth = proxy.getViewWidth();
 
-        Log.d("Html", width + "x" + height + "; " + viewWidth);
-
+        //max-width: 100% for the img
         if (viewWidth > 0){
             if (width > viewWidth){
                 height = viewWidth * height / width;
                 width = viewWidth;
             }
         }
-        Log.d("Html", "Computed: " + width + "x" + height + "; " + viewWidth);
 
-//        Drawable d = new ColorDrawable(Color.RED);
-        Drawable d = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0xFFFF0000, 0xFF000000});
+        Drawable d = new ColorDrawable(Color.TRANSPARENT);
+        // Using a gradient drawable is more convenient for debugging
+        // Drawable d = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0xFFFF0000, 0xFF000000});
         d.setBounds(0, 0, width, height);
 
         int len = text.length();
@@ -304,7 +302,6 @@ public class HtmlToSpannedConverter implements ContentHandler {
                 super.draw(canvas, text, start, end, x, top, y, bottom, paint);
 
                 proxy.onCreateImageSpace(index, src, (int) x, bottom - y + top, finalWidth, y - top);
-                Log.d("ImageSpan", "start: "+  start + "; end: " + end + "; x: " + x + "; top: " + top + "; y:" + y + "; bottom: " + bottom);
             }
         };
 
@@ -451,12 +448,12 @@ public class HtmlToSpannedConverter implements ContentHandler {
                 int len = sb.length();
 
                 if (len == 0) {
-                    len = mSpannableStringBuilder.length();
+                    len = spannableStringBuilder.length();
 
                     if (len == 0) {
                         pred = '\n';
                     } else {
-                        pred = mSpannableStringBuilder.charAt(len - 1);
+                        pred = spannableStringBuilder.charAt(len - 1);
                     }
                 } else {
                     pred = sb.charAt(len - 1);
@@ -470,7 +467,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
             }
         }
 
-        mSpannableStringBuilder.append(sb);
+        spannableStringBuilder.append(sb);
     }
 
     public void ignorableWhitespace(char ch[], int start, int length) throws SAXException {

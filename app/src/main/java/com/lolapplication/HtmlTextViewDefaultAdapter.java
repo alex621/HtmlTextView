@@ -26,6 +26,5 @@ public class HtmlTextViewDefaultAdapter extends HtmlTextView.HtmlTextViewAdapter
     @Override
     public void recycleImg(HtmlTextView.ImgViewHolder viewHolder, String src) {
         super.recycleImg(viewHolder, src);
-
     }
 }

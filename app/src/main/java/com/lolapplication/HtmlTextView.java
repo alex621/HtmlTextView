@@ -64,6 +64,19 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         overlay = createOverlay();
     }
 
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+        int newMeasuredWidth = getMeasuredWidth();
+        if (measuredWidth != newMeasuredWidth) {
+            measuredWidth = newMeasuredWidth;
+
+            //to trigger re-rendering
+            textView.setText(converter.convert());
+        }
+    }
+
     public void setHtml(String html){
         if (TextUtils.equals(html, this.html)){
             return;
@@ -114,19 +127,6 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
 
         converter = new HtmlToSpannedConverter(source, this, dataSupplier, tagHandler, parser);
         return converter.convert();
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-
-        int newMeasuredWidth = getMeasuredWidth();
-        if (measuredWidth != newMeasuredWidth) {
-            measuredWidth = newMeasuredWidth;
-
-            //to trigger re-rendering
-            textView.setText(converter.convert());
-        }
     }
 
     @Override
