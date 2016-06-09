@@ -1,4 +1,4 @@
-package com.lolapplication;
+package com.westkit.htmltextview;
 
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
@@ -26,6 +26,9 @@ import android.text.style.TypefaceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
 
+import com.westkit.htmltextview.data.DataSupplier;
+import com.westkit.htmltextview.data.ImgData;
+
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
@@ -48,12 +51,12 @@ public class HtmlToSpannedConverter implements ContentHandler {
     private SpannableStringBuilder spannableStringBuilder;
     private ConverterProxy proxy;
     private Html.TagHandler tagHandler;
-    private HtmlTextView.DataSupplier dataSupplier;
+    private DataSupplier dataSupplier;
 
     private int currentImageIndex = 0;
 
     public HtmlToSpannedConverter(
-            String source, ConverterProxy proxy, HtmlTextView.DataSupplier dataSupplier, Html.TagHandler tagHandler,
+            String source, ConverterProxy proxy, DataSupplier dataSupplier, Html.TagHandler tagHandler,
             XMLReader parser) {
         this.spannableStringBuilder = new SpannableStringBuilder();
         this.source = source;
@@ -251,8 +254,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
         text.setSpan(mark, len, len, Spannable.SPAN_MARK_MARK);
     }
 
-    private static void end(SpannableStringBuilder text, Class kind,
-                            Object repl) {
+    private static void end(SpannableStringBuilder text, Class kind, Object repl) {
         int len = text.length();
         Object obj = getLast(text, kind);
         int where = text.getSpanStart(obj);
@@ -269,7 +271,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
         int width = 0, height = 0;
 
         //prefer data from dataSupplier over inline attribute
-        HtmlTextView.ImgData data = dataSupplier.getImgData(src);
+        ImgData data = dataSupplier.getImgData(src);
         if (data != null){
             width = data.getWidth();
             height = data.getHeight();

@@ -1,10 +1,10 @@
-package com.lolapplication;
+package com.westkit.htmltextview;
 
 import android.content.Context;
 import android.util.AttributeSet;
 import android.widget.ScrollView;
 
-//http://stackoverflow.com/a/3952629/1999782
+//From: http://stackoverflow.com/a/3952629/1999782
 public class ObservableScrollView extends ScrollView {
 
     private ScrollViewListener scrollViewListener = null;

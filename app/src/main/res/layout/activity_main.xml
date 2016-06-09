@@ -3,17 +3,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.lolapplication.ObservableScrollView
+    <com.westkit.htmltextview.ObservableScrollView
         android:id="@+id/scroller"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.lolapplication.HtmlTextView
+        <com.westkit.htmltextview.HtmlTextView
             android:id="@+id/lol"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#CCC"/>
 
-    </com.lolapplication.ObservableScrollView>
+    </com.westkit.htmltextview.ObservableScrollView>
 
 </LinearLayout>

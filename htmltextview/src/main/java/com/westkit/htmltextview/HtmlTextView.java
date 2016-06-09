@@ -1,4 +1,4 @@
-package com.lolapplication;
+package com.westkit.htmltextview;
 
 import android.content.Context;
 import android.graphics.Point;
@@ -12,14 +12,16 @@ import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.westkit.htmltextview.container.Container;
+import com.westkit.htmltextview.container.ImgContainer;
+import com.westkit.htmltextview.data.DataSupplier;
+import com.westkit.htmltextview.data.ImgData;
 
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
-
-import java.util.HashMap;
 
 public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.ConverterProxy {
     private static final String TAG = "HtmlTextView";
@@ -35,7 +37,7 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
 
     private DataSupplier dataSupplier = new DefaultDataSupplier();
 
-    private HtmlTextViewAdapter adapter = new HtmlTextViewDefaultAdapter();
+    private HtmlTextViewAdapter adapter;
 
     private SparseArray<ImgContainer> imgContainerMap = new SparseArray<>();
 
@@ -249,137 +251,6 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
                 }
             }
         });
-    }
-
-
-    /*
-        Think of Container a manager of the space for displaying the resources like <img>.
-        It helps to attach/detach the view when it is visible/invisible.
-        If you want to add support for other element like <video>, you should extend a Container.
-     */
-    public static abstract class Container<VH extends ViewHolder>{
-        public VH viewHolder;
-        public LinearLayout containerView;
-        public int index;
-        public boolean visible;
-        public int width, height;
-
-        public Container(Context context, int index) {
-            this.containerView = new LinearLayout(context);
-            this.index = index;
-        }
-
-        public LinearLayout getContainerView(){
-            return containerView;
-        }
-
-        public abstract void attachChild();
-        public abstract void detachChild();
-    }
-    public static class ImgContainer extends Container<ImgViewHolder>{
-        private String src;
-        private HtmlTextViewAdapter adapter;
-
-        public ImgContainer(Context context, HtmlTextViewAdapter adapter, int index, String src) {
-            super(context, index);
-
-            this.adapter = adapter;
-            this.src = src;
-        }
-
-        @Override
-        public void attachChild() {
-            viewHolder = adapter.renderImg(containerView.getContext(), src, width, height, viewHolder);
-            containerView.addView(viewHolder.itemView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-        }
-
-        @Override
-        public void detachChild() {
-            containerView.removeAllViews();
-            adapter.recycleImg(viewHolder, src);
-        }
-    }
-
-    public static abstract class HtmlTextViewAdapter {
-        public ImgViewHolder renderImg(Context context, String src, int width, int height, ImgViewHolder oldViewHolder) {
-            return null;
-        }
-
-        public void recycleImg(ImgViewHolder viewHolder, String src){
-
-        }
-    }
-
-    public static abstract class ViewHolder{
-        public final View itemView;
-
-        public ViewHolder(View itemView) {
-            if (itemView == null) {
-                throw new IllegalArgumentException("itemView may not be null");
-            }
-            this.itemView = itemView;
-        }
-    }
-
-    public static class ImgViewHolder extends ViewHolder{
-        public ImgViewHolder(View itemView) {
-            super(itemView);
-        }
-    }
-
-    public static class ImgData{
-        private int width = 0, height = 0;
-
-        public ImgData(){}
-
-        public ImgData(int width, int height) {
-            this.width = width;
-            this.height = height;
-        }
-
-        public void setWidth(int width) {
-            this.width = width;
-        }
-
-        public void setHeight(int height) {
-            this.height = height;
-        }
-
-        public int getWidth(){
-            return width;
-        }
-        public int getHeight(){
-            return height;
-        }
-    }
-    interface DataSupplier{
-        ImgData getImgData(String src);
-    }
-
-    public static class MapDataSupplier implements DataSupplier{
-        private HashMap<String, ImgData> map;
-
-        public MapDataSupplier(){
-            this(null);
-        }
-
-        public MapDataSupplier(HashMap<String, ImgData> map) {
-            this.map = map;
-
-            if (this.map == null){
-                this.map = new HashMap<>();
-            }
-        }
-
-        public MapDataSupplier put(String src, ImgData data){
-            map.put(src, data);
-            return this;
-        }
-
-        @Override
-        public ImgData getImgData(String src) {
-            return map.get(src);
-        }
     }
 
     private class DefaultDataSupplier implements DataSupplier{
