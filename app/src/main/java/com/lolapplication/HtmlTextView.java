@@ -7,12 +7,12 @@ import android.text.Html;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.xml.sax.SAXException;
@@ -23,6 +23,9 @@ import java.util.HashMap;
 
 public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.ConverterProxy {
     private static final String TAG = "HtmlTextView";
+
+    public static final int VIEWHOLDER_TYPE_IMG = 1;
+
     private String html;
     private TextView textView;
     private FrameLayout overlay;
@@ -33,6 +36,8 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
     private DataSupplier dataSupplier = new DefaultDataSupplier();
 
     private HtmlTextViewAdapter adapter = new HtmlTextViewDefaultAdapter();
+
+    private SparseArray<ImgContainer> imgContainerMap = new SparseArray<>();
 
     private int measuredWidth = -1;
 
@@ -75,17 +80,8 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
             //to trigger re-rendering
             textView.setText(converter.convert());
         }
-    }
 
-    public void setHtml(String html){
-        if (TextUtils.equals(html, this.html)){
-            return;
-        }
-
-        this.html = html;
-
-        Spanned text = fromHtml(html, tagHandler);
-        textView.setText(text);
+        recycleCheck();
     }
 
     public DataSupplier getDataSupplier() {
@@ -116,12 +112,24 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         this.tagHandler = tagHandler;
     }
 
-    private Spanned fromHtml(String source, Html.TagHandler tagHandler){
+    public void setHtml(String html){
+        if (TextUtils.equals(html, this.html)){
+            return;
+        }
+
+        this.html = html;
+
+        cleanup();
+
+        Spanned text = fromHtml(html);
+        textView.setText(text);
+    }
+
+    private Spanned fromHtml(String source){
         XMLReader parser = null;
         try {
             parser = XMLReaderFactory.createXMLReader("org.ccil.cowan.tagsoup.Parser");
         } catch (SAXException e) {
-            e.printStackTrace();
             return null;
         }
 
@@ -129,17 +137,29 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         return converter.convert();
     }
 
+    private void cleanup(){
+        for (int i = 0, l = imgContainerMap.size(); i < l; i++){
+            ImgContainer container = imgContainerMap.valueAt(i);
+            container.detachChild();
+        }
+
+        overlay.removeAllViews();
+        imgContainerMap.clear();
+
+        if (converter != null) {
+            converter.cleanup();
+        }
+    }
+
     @Override
     public int getViewWidth() {
         return measuredWidth;
     }
 
-    public static final int VIEWHOLDER_TYPE_IMG = 1;
-
-    private SparseArray<ImgContainer> imgContainerMap = new SparseArray<>();
     @Override
     public void onCreateImageSpace(int index, String src, int left, int top, int width, int height) {
         ImgContainer container = imgContainerMap.get(index);
+
         if (container == null){
             container = new ImgContainer(getContext(), adapter, index, src);
             container.width = width;
@@ -150,7 +170,6 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
 
             imgContainerMap.put(index, container);
         }
-
 
         LayoutParams lp = new LayoutParams(width, height);
         lp.setMargins(left, top, 0, 0);
@@ -176,64 +195,78 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         screenRect = new Rect(0, 0, width, height);
     }
 
+    // should be called on scroll event in any scrollable view
     public void recycleCheck(){
         getScreenRect();
 
-        for (int i = 0, l = overlay.getChildCount(); i < l; i++) {
-            View v = overlay.getChildAt(i);
-            v.getLocationOnScreen(coordinate);
+        //ok...seriously, I have no idea why I need to wrap it in post()
+        //but if I don't, it won't be able to setHtml() again (the second time)
+        //TODO investigate what the fuck is going on
+        post(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0, l = overlay.getChildCount(); i < l; i++) {
+                    View v = overlay.getChildAt(i);
+                    v.getLocationOnScreen(coordinate);
 
-            viewRect.set(coordinate[0], coordinate[1], coordinate[0] + v.getMeasuredWidth(), coordinate[1] + v.getMeasuredHeight());
+                    viewRect.set(coordinate[0], coordinate[1], coordinate[0] + v.getMeasuredWidth(), coordinate[1] + v.getMeasuredHeight());
 
-            boolean isVisible = viewRect.intersect(screenRect);
-            Integer index = (Integer) v.getTag(R.id.htmltextview_viewholder_index);
-            Integer type = (Integer) v.getTag(R.id.htmltextview_viewholder_type);
-            if (index == null || type == null){
-                //WTF?
-                continue;
-            }
+                    boolean isVisible = viewRect.intersect(screenRect);
+                    Integer index = (Integer) v.getTag(R.id.htmltextview_viewholder_index);
+                    Integer type = (Integer) v.getTag(R.id.htmltextview_viewholder_type);
+                    if (index == null || type == null){
+                        //WTF?
+                        continue;
+                    }
 
-            Container container = null;
-            switch (type){
-                case VIEWHOLDER_TYPE_IMG:
-                default:
-                    container = imgContainerMap.get(index);
-                    break;
-            }
-            if (isVisible){
-                if (container.visible){
-                    //fine
-                }else{
-                    //was invisible, make it visible
-                    container.attachChild();
-                    container.visible = true;
+                    Container container = null;
+                    switch (type){
+                        case VIEWHOLDER_TYPE_IMG:
+                        default:
+                            container = imgContainerMap.get(index);
+                            break;
+                    }
+                    if (isVisible){
+                        if (container.visible){
+                            //fine
+                        }else{
+                            //was invisible, make it visible
+                            container.attachChild();
+                            container.visible = true;
+                        }
+                    }else{
+                        if (container.visible){
+                            //was visible, recycle it
+                            container.detachChild();
+                            container.visible = false;
+                        }else{
+                            //fine
+                        }
+                    }
                 }
-            }else{
-                if (container.visible){
-                    //was visible, recycle it
-                    container.detachChild();
-                    container.visible = false;
-                }else{
-                    //fine
-                }
             }
-        }
+        });
     }
 
 
+    /*
+        Think of Container a manager of the space for displaying the resources like <img>.
+        It helps to attach/detach the view when it is visible/invisible.
+        If you want to add support for other element like <video>, you should extend a Container.
+     */
     public static abstract class Container<VH extends ViewHolder>{
         public VH viewHolder;
-        public FrameLayout containerView;
+        public LinearLayout containerView;
         public int index;
         public boolean visible;
         public int width, height;
 
         public Container(Context context, int index) {
-            containerView = new FrameLayout(context);
+            this.containerView = new LinearLayout(context);
             this.index = index;
         }
 
-        public FrameLayout getContainerView(){
+        public LinearLayout getContainerView(){
             return containerView;
         }
 
@@ -286,7 +319,6 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
     }
 
     public static class ImgViewHolder extends ViewHolder{
-
         public ImgViewHolder(View itemView) {
             super(itemView);
         }

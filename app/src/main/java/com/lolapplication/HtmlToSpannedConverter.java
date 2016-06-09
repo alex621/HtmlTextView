@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.StringReader;
 
 public class HtmlToSpannedConverter implements ContentHandler {
+    private static final String TAG = "HtmlToSpannedConverter";
 
     private static final float[] HEADER_SIZES = {
             1.5f, 1.4f, 1.3f, 1.2f, 1.1f, 1f,
@@ -60,6 +61,13 @@ public class HtmlToSpannedConverter implements ContentHandler {
         this.dataSupplier = dataSupplier;
         this.tagHandler = tagHandler;
         this.reader = parser;
+    }
+
+    public void cleanup(){
+        this.proxy = null;
+        this.dataSupplier = null;
+        this.tagHandler = null;
+        this.reader = null;
     }
 
     public Spanned convert() {

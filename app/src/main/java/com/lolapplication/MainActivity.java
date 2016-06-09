@@ -26,6 +26,35 @@ public class MainActivity extends AppCompatActivity {
         tv.setDataSupplier(data);
         tv.setHtml(html);
 
+        tv.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                String html = "<h3>Creating a new Android Library</h3>\n" +
+                                "\n" +
+                                "<p>When you create a new Android project, a new application is always created.  You can use this application to test your library.  After creating the project, go to <code>New</code> -&gt; <code>New Module</code>:</p>\n" +
+                                "\n" +
+                                "<p><img src=\"https://camo.githubusercontent.com/c95982b415443c3b8e0c07527a43b8eb33276926/687474703a2f2f696d6775722e636f6d2f68627633456f342e706e67\" data-canonical-src=\"http://imgur.com/hbv3Eo4.png\"></p>\n" +
+                                "\n" +
+                                "<p>Select <code>Android Library</code>.  There is the option to choose <code>Java library</code>, but there is a major difference in that an Android library will include not only the Java classes but the resource files, image files, and Android manifest file normally associated with Android.  </p>\n" +
+                                "\n" +
+                                "<p><img src=\"https://camo.githubusercontent.com/95effac1fcab5b523d293ce0556f13f65b63e5a7/687474703a2f2f696d6775722e636f6d2f784455426a59672e706e67\" data-canonical-src=\"http://imgur.com/xDUBjYg.png\"></p>\n" +
+                                "\n" +
+                        "<p>You will prompted next to provide a name and the module name.  The name will simply be used to <a href=\"http://developer.android.com/guide/topics/manifest/manifest-intro.html#iconlabel\">label</a> the application in the Android Manifest file, while the module name will correspond to the directory to be created:</p>" +
+                        "<p>You will prompted next to provide a name and the module name.  The name will simply be used to <a href=\"http://developer.android.com/guide/topics/manifest/manifest-intro.html#iconlabel\">label</a> the application in the Android Manifest file, while the module name will correspond to the directory to be created:</p>" +
+                        "<p>You will prompted next to provide a name and the module name.  The name will simply be used to <a href=\"http://developer.android.com/guide/topics/manifest/manifest-intro.html#iconlabel\">label</a> the application in the Android Manifest file, while the module name will correspond to the directory to be created:</p>" +
+                        "<p>You will prompted next to provide a name and the module name.  The name will simply be used to <a href=\"http://developer.android.com/guide/topics/manifest/manifest-intro.html#iconlabel\">label</a> the application in the Android Manifest file, while the module name will correspond to the directory to be created:</p>" +
+                        "<p>You will prompted next to provide a name and the module name.  The name will simply be used to <a href=\"http://developer.android.com/guide/topics/manifest/manifest-intro.html#iconlabel\">label</a> the application in the Android Manifest file, while the module name will correspond to the directory to be created:</p>" +
+                        "<p>You will prompted next to provide a name and the module name.  The name will simply be used to <a href=\"http://developer.android.com/guide/topics/manifest/manifest-intro.html#iconlabel\">label</a> the application in the Android Manifest file, while the module name will correspond to the directory to be created:</p>";
+
+                HtmlTextView.MapDataSupplier data = new HtmlTextView.MapDataSupplier();
+                data.put("https://camo.githubusercontent.com/c95982b415443c3b8e0c07527a43b8eb33276926/687474703a2f2f696d6775722e636f6d2f68627633456f342e706e67", new HtmlTextView.ImgData(525, 361));
+                data.put("https://camo.githubusercontent.com/95effac1fcab5b523d293ce0556f13f65b63e5a7/687474703a2f2f696d6775722e636f6d2f784455426a59672e706e67", new HtmlTextView.ImgData(620, 373));
+
+                tv.setDataSupplier(data);
+                tv.setHtml(html);
+            }
+        }, 5000);
+
         ObservableScrollView scroller = (ObservableScrollView) findViewById(R.id.scroller);
         scroller.setScrollViewListener(new ObservableScrollView.ScrollViewListener() {
             @Override
