@@ -14,7 +14,6 @@ public class HtmlTextViewDefaultAdapter extends HtmlTextView.HtmlTextViewAdapter
     public HtmlTextView.ImgViewHolder renderImg(Context context, String src, int width, int height, HtmlTextView.ImgViewHolder oldViewHolder) {
         if (oldViewHolder == null){
             SimpleDraweeView view = new SimpleDraweeView(context);
-            view.setBackgroundColor(0x550000FF);
             view.setImageURI(Uri.parse(src));
 
             oldViewHolder = new HtmlTextView.ImgViewHolder(view);
