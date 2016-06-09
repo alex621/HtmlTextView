@@ -156,6 +156,8 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
         return measuredWidth;
     }
 
+    //callback from converter
+    //will be called when the ImageSpan draws
     @Override
     public void onCreateImageSpace(int index, String src, int left, int top, int width, int height) {
         ImgContainer container = imgContainerMap.get(index);
@@ -206,6 +208,7 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
             @Override
             public void run() {
                 for (int i = 0, l = overlay.getChildCount(); i < l; i++) {
+                    //TODO check whether it is visible inside the view bound instead of inside the screen bound
                     View v = overlay.getChildAt(i);
                     v.getLocationOnScreen(coordinate);
 
