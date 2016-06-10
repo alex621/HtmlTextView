@@ -1,8 +1,12 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.jfrog.bintray'
 
-version = "0.1.0"
+version = "0.1.1"
+
+ext {
+    PUBLISH_GROUP_ID = 'com.westkit.htmltextview'
+    PUBLISH_ARTIFACT_ID = 'htmltextview-default-adapter'
+    PUBLISH_VERSION = version
+}
 
 android {
     compileSdkVersion 23
@@ -22,67 +26,6 @@ android {
     }
 }
 
-def siteUrl = 'https://github.com/alex621/HtmlTextView'      // Homepage URL of the library
-def gitUrl = 'https://github.com/alex621/HtmlTextView.git'   // Git repository URL
-group = "com.westkit.htmltextview"                                        // Maven Group ID for the artifact
-
-install {
-    repositories.mavenInstaller {
-        // This generates POM.xml with proper parameters
-        pom {
-            project {
-                packaging 'aar'
-
-                // Add your description here
-                name 'htmltextview-default-adapter'
-                url siteUrl
-
-                group group
-                artifactId "htmltextview-default-adapter"
-                version "0.1.0"
-
-                developers {
-                    developer {
-                        id 'alex621'
-                        name 'Alex Lau'
-                        email 'alex621@gmail.com'
-                    }
-                }
-                scm {
-                    connection gitUrl
-                    developerConnection gitUrl
-                    url siteUrl
-
-                }
-            }
-        }
-    }
-}
-
-Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-
-bintray {
-    user = properties.getProperty("bintray.user")
-    key = properties.getProperty("bintray.apikey")
-
-    configurations = ['archives']
-    pkg {
-        repo = "maven"
-        name = "htmltextview-default-adapter"
-        websiteUrl = siteUrl
-        vcsUrl = gitUrl
-        licenses = ["Apache-2.0"]
-        publish = true
-
-        version {
-            name = '0.1.0'
-//            desc = 'Gradle Bintray Plugin 1.0 final'
-            vcsTag = '0.1.0'
-        }
-    }
-}
-
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
@@ -91,3 +34,5 @@ dependencies {
 
     compile project(':htmltextview')
 }
+
+apply from: 'https://raw.githubusercontent.com/blundell/release-android-library/master/android-release-aar.gradle'
