@@ -78,3 +78,7 @@ ObservableScrollView is provided in this library as well. Use it if you want ;)
 ## License
 
 WTFPL. Do what the fuck you want to.
+
+## BTW
+
+It does not support GIF and video at this moment. Feel free to contribute.
