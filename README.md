@@ -41,8 +41,20 @@ Set the data in code.
 
 ```java
 final HtmlTextView tv = (HtmlTextView) findViewById(R.id.tv);
+//You must include this line in your gradle first in order to use default adapter
+//compile 'com.westkit.htmltextview:htmltextview-default-adapter:0.1.2'
 tv.setAdapter(new HtmlTextViewDefaultAdapter());
 tv.setHtml(html);
+```
+
+If you use the default adapter, you should add a line in your Application class to initialise Fresco.
+
+```java
+@Override
+public void onCreate() {
+    super.onCreate();
+    Fresco.initialize(this);
+}
 ```
 
 That's it. Assuming that you have defined width and height for your `<img>`.
@@ -73,7 +85,7 @@ scroller.setScrollViewListener(new ObservableScrollView.ScrollViewListener() {
 });
 ```
 
-ObservableScrollView is provided in this library as well. Use it if you want ;)
+ObservableScrollView is included in this library as well. Use it if you want ;)
 
 ## License
 
