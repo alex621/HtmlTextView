@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 
-version = "0.1.1"
+version = "0.1.2"
 
 ext {
     PUBLISH_GROUP_ID = 'com.westkit.htmltextview'
@@ -34,6 +34,7 @@ dependencies {
     compile 'com.facebook.fresco:animated-gif:0.10.0'
 
     compile project(':htmltextview')
+//    compile 'com.westkit.htmltextview:htmltextview:0.1.2'
 }
 
 apply from: 'https://raw.githubusercontent.com/blundell/release-android-library/master/android-release-aar.gradle'
