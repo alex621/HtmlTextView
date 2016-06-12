@@ -4,6 +4,8 @@ import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 
+import com.facebook.drawee.backends.pipeline.Fresco;
+import com.facebook.drawee.interfaces.DraweeController;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.westkit.htmltextview.HtmlTextView;
 import com.westkit.htmltextview.HtmlTextViewAdapter;
@@ -16,7 +18,12 @@ public class HtmlTextViewDefaultAdapter extends HtmlTextViewAdapter {
     public ImgViewHolder renderImg(Context context, String src, int width, int height, ImgViewHolder oldViewHolder) {
         if (oldViewHolder == null){
             SimpleDraweeView view = new SimpleDraweeView(context);
-            view.setImageURI(Uri.parse(src));
+
+            DraweeController controller = Fresco.newDraweeControllerBuilder()
+                    .setUri(Uri.parse(src))
+                    .setAutoPlayAnimations(true)
+            .build();
+            view.setController(controller);
 
             oldViewHolder = new ImgViewHolder(view);
         }
