@@ -271,7 +271,7 @@ public class HtmlToSpannedConverter implements ContentHandler {
         int width = 0, height = 0;
 
         //prefer data from dataSupplier over inline attribute
-        ImgData data = dataSupplier.getImgData(src);
+        ImgData data = dataSupplier.getImgData(src, attributes);
         if (data != null){
             width = data.getWidth();
             height = data.getHeight();

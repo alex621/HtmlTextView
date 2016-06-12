@@ -1,5 +1,7 @@
 package com.westkit.htmltextview.data;
 
+import org.xml.sax.Attributes;
+
 import java.util.HashMap;
 
 public class MapDataSupplier implements DataSupplier{
@@ -23,7 +25,7 @@ public class MapDataSupplier implements DataSupplier{
     }
 
     @Override
-    public ImgData getImgData(String src) {
+    public ImgData getImgData(String src, Attributes attributes) {
         return map.get(src);
     }
 }

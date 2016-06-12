@@ -19,6 +19,7 @@ import com.westkit.htmltextview.container.ImgContainer;
 import com.westkit.htmltextview.data.DataSupplier;
 import com.westkit.htmltextview.data.ImgData;
 
+import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
@@ -255,7 +256,7 @@ public class HtmlTextView extends FrameLayout implements HtmlToSpannedConverter.
 
     private class DefaultDataSupplier implements DataSupplier{
         @Override
-        public ImgData getImgData(String src) {
+        public ImgData getImgData(String src, Attributes attributes) {
             return null;
         }
     }
