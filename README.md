@@ -62,8 +62,8 @@ That's it. Assuming that you have defined width and height for your `<img>`.
 Yes! You need to give me the width and height in order to show the images, either inside the HTML or providing another data object, like the following:
 
 ```java
-MapDataSupplier data = new MapDataSupplier(); data.put("https://placehold.it/350x150", new ImgData(350, 150));
-
+MapDataSupplier data = new MapDataSupplier();
+data.put("https://placehold.it/350x150", new ImgData(350, 150));
 tv.setDataSupplier(data);
 ```
 
