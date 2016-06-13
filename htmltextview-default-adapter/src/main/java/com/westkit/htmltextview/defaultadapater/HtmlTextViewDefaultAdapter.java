@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.util.Log;
 
 import com.facebook.drawee.backends.pipeline.Fresco;
+import com.facebook.drawee.drawable.ProgressBarDrawable;
 import com.facebook.drawee.interfaces.DraweeController;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.westkit.htmltextview.HtmlTextView;
@@ -22,8 +23,10 @@ public class HtmlTextViewDefaultAdapter extends HtmlTextViewAdapter {
             DraweeController controller = Fresco.newDraweeControllerBuilder()
                     .setUri(Uri.parse(src))
                     .setAutoPlayAnimations(true)
-            .build();
+                    .build();
             view.setController(controller);
+
+            view.getHierarchy().setProgressBarImage(new HtmlTextViewProgressBarDrawable());
 
             oldViewHolder = new ImgViewHolder(view);
         }
