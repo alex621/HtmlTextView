@@ -93,4 +93,4 @@ WTFPL. Do what the fuck you want to.
 
 ## BTW
 
-It does not support GIF and video at this moment. Feel free to contribute.
+It does not support video at this moment. Feel free to contribute.
