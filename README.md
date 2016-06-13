@@ -18,10 +18,10 @@ Seriously? You wanna use WebView in RecyclerView?
 To add a dependency using Gradle:
 
 ```
-  compile 'com.westkit.htmltextview:htmltextview:0.1.1'
+  compile 'com.westkit.htmltextview:htmltextview:0.1.2'
   
   //Optional
-  compile 'com.westkit.htmltextview:htmltextview-default-adapter:0.1.1'
+  compile 'com.westkit.htmltextview:htmltextview-default-adapter:0.1.2'
 ```
 
 What is the default adapter? Using HtmlTextView, you need to plug an adapter into the view in order to display resources like `<img>` `<video>` . Default adapter is an out-of-the-box solution for it. It uses Fresco to display images. Unless you want to use other libraries, you may just stick with the default adapter.
